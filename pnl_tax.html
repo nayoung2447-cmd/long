@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>양도세 계산</title>
+<style>
+  :root{
+    --ink:#11161d; --ink-soft:#5b6675; --line:#e3e7ee; --line-soft:#eef1f6;
+    --panel:#ffffff; --canvas:#f5f7fa; --accent:#1f6feb; --ok:#1a7f5a; --warn:#c2772a;
+    --profit:#c5221f; --loss:#1f6feb;
+    --shadow:0 1px 2px rgba(16,22,30,.04),0 8px 28px rgba(16,22,30,.06);
+    --mono:ui-monospace,"SF Mono","Cascadia Mono","Segoe UI Mono",Consolas,monospace;
+    --sans:ui-sans-serif,-apple-system,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:var(--sans);color:var(--ink);background:var(--canvas);
+    -webkit-font-smoothing:antialiased;line-height:1.5;padding:28px 18px 48px}
+  .wrap{max-width:1120px;margin:0 auto}
+  header{margin-bottom:22px}
+  .eyebrow{font:600 11px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:10px}
+  h1{font-size:26px;font-weight:760;letter-spacing:-.02em;margin:0 0 4px}
+  .sub{color:var(--ink-soft);font-size:14px;margin:0}
+  .updated{font:600 12px var(--mono);color:var(--ink-soft);margin:9px 0 0}
+  .updated b{color:var(--ink)}
+  .updated .sep{opacity:.5;margin:0 8px}
+  .updated input{font:600 12px var(--mono);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:3px 6px;background:#fff}
+  .grid{display:grid;grid-template-columns:minmax(0,1fr) 470px;gap:20px;align-items:start}
+  @media(max-width:880px){.grid{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+
+  .res{padding:22px}
+  .res h2{font-size:15px;font-weight:680;margin:0 0 14px}
+  .chips{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:6px}
+  .chip{flex:1;min-width:120px}
+  .chip .v{font:680 17px var(--mono);white-space:nowrap}
+  .chip .v.pf{color:var(--profit)} .chip .v.ls{color:var(--loss)}
+  .chip .k{font-size:11px;color:var(--ink-soft);margin-top:1px}
+
+  .brk{margin-top:16px;border-top:1px solid var(--line-soft);padding-top:6px}
+  .brk .li{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;font-size:13px;border-bottom:1px solid var(--line-soft)}
+  .brk .li .lb{color:var(--ink-soft)}
+  .brk .li .vl{font-family:var(--mono);font-weight:600}
+  .brk .li.total{border-bottom:0;padding-top:11px}
+  .brk .li.total .lb{color:var(--ink);font-weight:700}
+  .brk .li.total .vl{font-size:16px}
+  .vl.pf{color:var(--profit)} .vl.ls{color:var(--loss)}
+  .save{margin-top:12px;background:#fbfdfb;border:1px solid #dbeee2;border-radius:11px;padding:11px 13px;font-size:12.5px;color:#1a5f43}
+  .save b{font-family:var(--mono)}
+
+  .rlist{margin-top:16px}
+  .rlist .r{display:flex;align-items:center;gap:9px;padding:5px 0;font-size:13px;border-bottom:1px solid var(--line-soft)}
+  .rlist .r .tag{font:600 9.5px var(--mono);padding:2px 5px;border-radius:5px;background:var(--line-soft);color:var(--ink-soft)}
+  .rlist .r .tag.ov{background:#eaf1fd;color:#1f6feb}
+  .rlist .r .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rlist .r .pl{margin-left:auto;font-family:var(--mono);font-weight:600}
+  .rlist .r.off{opacity:.4}
+
+  .ctrl{padding:20px}
+  .ctrl h2{font-size:13px;font-weight:700;margin:0}
+  .cashrow{display:flex;align-items:center;gap:10px;margin:12px 0}
+  .cashrow label{font-size:12.5px;font-weight:600;white-space:nowrap}
+  .cashrow input{flex:1;font-family:var(--mono);text-align:right;font-size:13px;border:1px solid var(--line);border-radius:9px;padding:8px 10px;min-width:0}
+  .rows{display:flex;flex-direction:column;gap:10px}
+  .row{border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff}
+  .row.off{background:#fafbfc}
+  .row-top{display:grid;grid-template-columns:20px 78px minmax(0,1fr) 24px;gap:8px;align-items:center}
+  .row-bot{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:7px;margin-top:9px}
+  .row input,.row select{font-family:var(--sans);font-size:13px;border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 9px;width:100%;min-width:0;color:var(--ink)}
+  .row input.r{font-family:var(--mono);text-align:right}
+  .row input.ro{background:var(--line-soft);color:var(--ink-soft)}
+  .row input:focus,.row select:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+  .row .inc{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;justify-self:center}
+  .fld{display:flex;flex-direction:column;gap:3px}
+  .fld>span{font:600 9.5px var(--mono);letter-spacing:.02em;color:var(--ink-soft);padding-left:2px;white-space:nowrap}
+  .del{border:0;background:none;color:#b3bcc7;font-size:17px;cursor:pointer;border-radius:8px;line-height:1;padding:4px}
+  .del:hover{color:#d24545;background:#fbeaea}
+  .add{margin-top:12px;width:100%;border:1px dashed var(--line);background:#fbfcfe;color:var(--ink-soft);font:600 13px var(--sans);padding:10px;border-radius:11px;cursor:pointer}
+  .add:hover{border-color:var(--accent);color:var(--accent)}
+  .loadbtn{border:1px solid #e3e7ee;background:#fff;color:#1f6feb;font:600 12px system-ui;padding:6px 11px;border-radius:9px;cursor:pointer}
+  .loadmsg{font:500 11.5px var(--mono);color:var(--ink-soft);min-height:14px;margin:8px 0 2px}
+  footer{max-width:1120px;margin:18px auto 0;color:var(--ink-soft);font-size:11.5px;text-align:center}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+  @media(max-width:640px){
+    body{padding:16px 10px 44px}
+    input,select,textarea{font-size:16px !important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">P/L · Capital Gains Tax</div>
+    <h1>양도세 계산</h1>
+    <p class="sub">해외주식 실현 손익을 통산해 양도소득세(기본공제 후 22%)를 계산합니다. 손실 종목을 함께 팔 때의 절세 효과도 보여줘요. 금액은 원화 기준(미국주식은 매수·매도 시점 환율로 환산한 값).</p>
+    <p class="updated">마지막 업데이트: <b id="updTs">—</b><span class="sep">·</span>기준일 <input type="date" id="baseDate" title="데이터 기준일"></p>
+  </header>
+
+  <div class="grid">
+    <section class="panel res">
+      <h2>계산 결과</h2>
+      <div class="chips" id="chips"></div>
+      <div class="brk" id="brk"></div>
+      <div class="save" id="save"></div>
+      <div class="rlist" id="rlist"></div>
+    </section>
+
+    <section class="panel ctrl">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <h2>종목 입력</h2>
+        <div style="display:flex;gap:8px">
+          <button id="loadJournal" class="loadbtn">↓ 매매일지</button>
+          <button id="loadPie" class="loadbtn">↓ 파이1 불러오기</button>
+        </div>
+      </div>
+      <div class="loadmsg" id="loadMsg"></div>
+      <div class="cashrow">
+        <label>귀속연도</label>
+        <select id="yearSel" style="flex:1;font-family:var(--mono);font-size:13px;border:1px solid var(--line);border-radius:9px;padding:8px 10px"></select>
+      </div>
+      <div class="cashrow">
+        <label>기본공제 (연 1회)</label>
+        <input id="deduction" type="number" min="0" step="500000" value="2500000">
+      </div>
+      <div class="rows" id="rows"></div>
+      <button class="add" id="add">+ 행 추가</button>
+    </section>
+  </div>
+</div>
+<footer>해외주식: 1~12월 실현손익을 통산해 250만원 공제 후 22%(양도세20%+지방세2%) · 손실은 다음 해로 이월되지 않음 · 국내주식(소액주주)은 비과세 · 정보 정리용이며 세무 자문이 아닙니다</footer>
+
+<script>
+(function(){
+  "use strict";
+  const RATE=0.22, PKEY="toolkit:pnl";
+  let data=[
+    {type:"해외", name:"엔비디아",     buy:3000000, sell:6000000, inc:true},
+    {type:"해외", name:"아스테라랩스", buy:2000000, sell:1300000, inc:true},
+    {type:"해외", name:"마이크론",     buy:1500000, sell:2200000, inc:true},
+    {type:"국내", name:"삼성전자",     buy:6000000, sell:7180000, inc:true},
+  ];
+  const CURYEAR=new Date().getFullYear();
+  let deduction=2500000, updatedAt=null, baseDate="", loaded=false, selectedYear=CURYEAR;
+  try{const s=localStorage.getItem(PKEY);if(s){const o=JSON.parse(s);
+    if(o&&Array.isArray(o.data)&&o.data.length)data=o.data;
+    if(o&&o.deduction!=null)deduction=o.deduction;
+    if(o&&o.updatedAt)updatedAt=o.updatedAt;
+    if(o&&o.baseDate)baseDate=o.baseDate;
+    if(o&&o.year)selectedYear=Number(o.year)||CURYEAR;}}catch(e){}
+  data.forEach(d=>{ if(!d.year)d.year=CURYEAR; });
+  function fmtDate(ts){const d=new Date(ts);const p=n=>String(n).padStart(2,"0");
+    return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes());}
+  function renderMeta(){const el=document.getElementById("updTs");if(el)el.textContent=updatedAt?fmtDate(updatedAt):"—";}
+  function persist(){ if(loaded) updatedAt=Date.now(); renderMeta();
+    try{localStorage.setItem(PKEY,JSON.stringify({data,deduction,year:selectedYear,updatedAt,baseDate}));}catch(e){}}
+
+  const fmt=n=>(n<0?"-":"")+"₩"+Math.round(Math.abs(n)).toLocaleString("ko-KR");
+  const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const pl=d=>Number(d.sell||0)-Number(d.buy||0);
+
+  function render(){
+    const inYear=d=>(Number(d.year)||CURYEAR)===selectedYear;
+    const active=data.filter(d=>d.inc&&d.name.trim()!==""&&inYear(d));
+    const ov=active.filter(d=>d.type==="해외");
+    const dm=active.filter(d=>d.type==="국내");
+    const ovNet=ov.reduce((s,d)=>s+pl(d),0);
+    const ovWin=ov.reduce((s,d)=>s+Math.max(0,pl(d)),0);
+    const ovLoss=ov.reduce((s,d)=>s+Math.min(0,pl(d)),0);
+    const dmNet=dm.reduce((s,d)=>s+pl(d),0);
+    const base=Math.max(0, ovNet-deduction);
+    const tax=base*RATE;
+    const baseWin=Math.max(0, ovWin-deduction);
+    const taxWin=baseWin*RATE;
+    const saving=taxWin-tax;
+    const totalNet=ovNet+dmNet;
+    const afterTax=totalNet-tax;
+
+    document.getElementById("chips").innerHTML=
+      chip(fmt(totalNet),"총 실현손익", totalNet>=0?"pf":"ls")+
+      chip(fmt(tax),"예상 양도세")+
+      chip(fmt(afterTax),"세후 실현손익", afterTax>=0?"pf":"ls");
+
+    document.getElementById("brk").innerHTML=
+      li("해외 통산 실현손익", ovNet, true)+
+      li("&nbsp;&nbsp;· 이익 종목 합", ovWin, true, "sub")+
+      li("&nbsp;&nbsp;· 손실 종목 합", ovLoss, true, "sub")+
+      li("기본공제", -deduction, false)+
+      li("과세표준", base, false)+
+      li("양도세 (22%)", -tax, false)+
+      li("세후 해외 손익", ovNet-tax, true, "total")+
+      (dm.length?li("국내 실현손익 (비과세)", dmNet, true):"");
+
+    const sv=document.getElementById("save");
+    if(ovLoss<0 && saving>0){
+      sv.style.display="block";
+      sv.innerHTML=`손실 종목까지 함께 실현하면 과세표준이 줄어 <b>${fmt(saving)}</b> 절세돼요. `+
+        `(손실 없이 이익만 팔면 세금 ${fmt(taxWin)} → 통산 시 ${fmt(tax)})`;
+    } else if(ovNet<=0 && ov.length){
+      sv.style.display="block";
+      sv.innerHTML=`해외 통산이 손실이라 양도세가 없어요. 단, 해외주식 손실은 <b>다음 해로 이월되지 않습니다</b> — 이익 종목과 같은 해에 함께 실현해야 통산 효과를 봐요.`;
+    } else { sv.style.display="none"; }
+
+    const rl=document.getElementById("rlist");
+    rl.innerHTML = data.filter(d=>d.name.trim()!=="").map(d=>{
+      const v=pl(d), c=v>=0?"pf":"ls", on=d.inc&&inYear(d);
+      return `<div class="r${on?'':' off'}"><span class="tag">${esc(String(d.year||CURYEAR))}</span><span class="tag ${d.type==='해외'?'ov':''}">${d.type}</span>`+
+        `<span class="nm">${esc(d.name)}</span>`+
+        `<span class="pl ${c}">${(v>=0?'+':'')}${fmt(v)}</span></div>`;
+    }).join("");
+  }
+  const chip=(v,k,c)=>`<div class="chip"><div class="v ${c||''}">${v}</div><div class="k">${k}</div></div>`;
+  const li=(lb,v,signed,cls)=>`<div class="li ${cls||''}"><span class="lb">${lb}</span>`+
+    `<span class="vl ${signed?(v>=0?'pf':'ls'):''}">${signed&&v>0?'+':''}${fmt(v)}</span></div>`;
+
+  const rowsEl=document.getElementById("rows");
+  function fld(label,k,v,i,ro,step){
+    return `<label class="fld"><span>${label}</span>`+
+      `<input class="r${ro?' ro':''}" data-i="${i}" data-k="${k}" type="number" step="${step||10000}" value="${v}"${ro?" readonly tabindex=\"-1\"":""}></label>`;}
+  function buildRows(){
+    rowsEl.innerHTML="";
+    data.forEach((d,i)=>{
+      const row=document.createElement("div");row.className="row"+(d.inc?"":" off");row.dataset.i=i;
+      row.innerHTML=
+        `<div class="row-top">`+
+          `<input class="inc" type="checkbox" data-i="${i}" data-k="inc" ${d.inc?"checked":""} title="이번 매도에 포함">`+
+          `<select data-i="${i}" data-k="type"><option${d.type==="해외"?" selected":""}>해외</option><option${d.type==="국내"?" selected":""}>국내</option></select>`+
+          `<input data-i="${i}" data-k="name" value="${esc(d.name)}" placeholder="종목명">`+
+          `<button class="del" data-del="${i}" title="삭제" aria-label="삭제">×</button>`+
+        `</div>`+
+        `<div class="row-bot">`+
+          fld("매입금액","buy",d.buy,i)+
+          fld("매도금액","sell",d.sell,i)+
+          fld("손익(자동)","pl",Math.round(pl(d)),i,true)+
+          fld("연도","year",d.year||CURYEAR,i,false,1)+
+        `</div>`;
+      rowsEl.appendChild(row);});
+  }
+  rowsEl.addEventListener("input",e=>{const t=e.target;if(t.dataset.i==null)return;
+    const i=+t.dataset.i,k=t.dataset.k;
+    if(k==="pl")return;
+    if(k==="inc"){data[i].inc=t.checked; t.closest(".row").classList.toggle("off",!t.checked);}
+    else if(k==="name"||k==="type")data[i][k]=t.value;
+    else if(k==="year")data[i].year=t.value===""?CURYEAR:Math.max(2000,Math.min(2100,Math.round(+t.value)||CURYEAR));
+    else data[i][k]=t.value===""?0:Math.max(0,+t.value);
+    if(k==="buy"||k==="sell"){const p=t.closest(".row").querySelector('input[data-k="pl"]');if(p)p.value=Math.round(pl(data[i]));}
+    render();persist();});
+  rowsEl.addEventListener("change",e=>{if(e.target.dataset.k==="type"||e.target.dataset.k==="inc"){render();persist();}});
+  rowsEl.addEventListener("click",e=>{const b=e.target.closest("[data-del]");if(!b)return;
+    data.splice(+b.dataset.del,1);buildRows();render();persist();});
+  document.getElementById("add").addEventListener("click",()=>{
+    data.push({type:"해외",name:"",buy:0,sell:0,year:selectedYear,inc:true});buildRows();render();persist();
+    const ins=rowsEl.querySelectorAll('input[data-k="name"]');if(ins.length)ins[ins.length-1].focus();});
+  document.getElementById("deduction").addEventListener("input",e=>{deduction=e.target.value===""?0:Math.max(0,+e.target.value);render();persist();});
+
+  // 파이1 불러오기: 매입금액←매입금액, 매도금액←평가금액 (지금 다 팔면 가정)
+  function setMsg(m){document.getElementById("loadMsg").textContent=m;}
+  function applyPie(arr){
+    const rows=arr.filter(x=>x&&(x.name||"").trim()!=="").map(x=>({
+      type:"해외", name:x.name, buy:Math.round(Number(x.amount)||0), sell:Math.round(Number(x.eval)||0), year:selectedYear, inc:true}));
+    if(!rows.length){setMsg("파이1에 종목이 없어요.");return;}
+    data=rows;buildRows();render();persist();
+    setMsg("파이1에서 "+rows.length+"개 불러옴 · 매도금액=평가금액(지금 매도 가정) · 국내 종목은 '구분'을 국내로 바꾸세요");
+  }
+  function extractArr(j){
+    if(Array.isArray(j))return j;
+    if(j&&Array.isArray(j.data))return j.data;
+    if(j&&j.data&&Array.isArray(j.data.pie1))return j.data.pie1;
+    if(j&&j.data&&typeof j.data==="object"){const v=Object.values(j.data);if(Array.isArray(v[0]))return v[0];}
+    return null;}
+  function readLocalPie(){try{const s=localStorage.getItem("toolkit:pie1");if(!s)return null;return extractArr(JSON.parse(s));}catch(e){return null;}}
+  function pickPieFile(){const i=document.createElement("input");i.type="file";i.accept=".json,application/json";
+    i.onchange=()=>{const f=i.files[0];if(!f)return;const r=new FileReader();
+      r.onload=()=>{try{const a=extractArr(JSON.parse(r.result));if(a&&a.length)applyPie(a);else setMsg("파이1 데이터를 못 찾았어요.");}catch(e){setMsg("JSON을 읽지 못했어요.");}};
+      r.readAsText(f);};i.click();}
+  document.getElementById("loadPie").addEventListener("click",()=>{
+    const a=readLocalPie();
+    if(a&&a.length){applyPie(a);}
+    else{setMsg("저장된 파이1 데이터가 없어요 — 파이1 '내보내기' 파일을 선택하세요.");pickPieFile();}
+  });
+
+  // 매매일지에서 실현된 매도 불러오기 (매매일지의 '손익계산기로 보내기'가 저장한 데이터)
+  function applyRows(rows){
+    const clean=rows.filter(x=>x&&(x.name||"").trim()!=="").map(x=>({
+      type:x.type==="국내"?"국내":"해외", name:x.name,
+      buy:Math.max(0,Math.round(+x.buy||0)), sell:Math.max(0,Math.round(+x.sell||0)),
+      year:Number(x.year)||selectedYear, inc:x.inc!==false}));
+    if(!clean.length){setMsg("불러올 매도 기록이 없어요.");return;}
+    data=clean;buildRows();render();persist();
+    setMsg("매매일지에서 "+clean.length+"건(실현 매도)을 불러왔어요");
+  }
+  document.getElementById("loadJournal").addEventListener("click",()=>{
+    let rows=null;
+    try{const s=localStorage.getItem("toolkit:journal-sells");if(s)rows=JSON.parse(s);}catch(e){}
+    if(Array.isArray(rows)&&rows.length){applyRows(rows);}
+    else{setMsg("매매일지 데이터가 없어요 — 매매일지에서 '손익계산기로 보내기'를 먼저 누르거나, 내보낸 파일을 선택하세요.");
+      const i=document.createElement("input");i.type="file";i.accept=".json,application/json";
+      i.onchange=()=>{const f=i.files[0];if(!f)return;const r=new FileReader();
+        r.onload=()=>{try{let j=JSON.parse(r.result);let arr=Array.isArray(j)?j:(j.data&&Array.isArray(j.data)?j.data:null);
+          if(arr)applyRows(arr);else setMsg("매매일지 파일이 아니에요.");}catch(e){setMsg("JSON을 읽지 못했어요.");}};
+        r.readAsText(f);};i.click();}
+  });
+
+  document.getElementById("deduction").value=deduction;
+  (function(){const ys=document.getElementById("yearSel");
+    for(let y=CURYEAR+1;y>=CURYEAR-4;y--){const o=document.createElement("option");o.value=y;o.textContent=y+"년";ys.appendChild(o);}
+    ys.value=selectedYear;
+    ys.addEventListener("change",()=>{selectedYear=Number(ys.value)||CURYEAR;render();persist();});})();
+  buildRows();render();persist();loaded=true;renderMeta();
+  const bdEl=document.getElementById("baseDate");
+  if(bdEl){bdEl.value=baseDate||"";bdEl.addEventListener("change",()=>{baseDate=bdEl.value;persist();});}
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>포트폴리오 · 국장</title>
+<style>
+  :root{
+    --ink:#11161d; --ink-soft:#5b6675; --line:#e3e7ee; --line-soft:#eef1f6;
+    --panel:#ffffff; --canvas:#f5f7fa; --accent:#1f6feb; --ok:#1a7f5a; --warn:#c2772a;
+    --profit:#c5221f; --loss:#1f6feb;
+    --shadow:0 1px 2px rgba(16,22,30,.04),0 8px 28px rgba(16,22,30,.06);
+    --mono:ui-monospace,"SF Mono","Cascadia Mono","Segoe UI Mono",Consolas,monospace;
+    --sans:ui-sans-serif,-apple-system,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:var(--sans);color:var(--ink);background:var(--canvas);
+    -webkit-font-smoothing:antialiased;line-height:1.5;padding:28px 18px 48px}
+  .wrap{max-width:1120px;margin:0 auto}
+  header{margin-bottom:22px}
+  .eyebrow{font:600 11px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:10px}
+  h1{font-size:26px;font-weight:760;letter-spacing:-.02em;margin:0 0 4px}
+  .sub{color:var(--ink-soft);font-size:14px;margin:0}
+  .updated{font:600 12px var(--mono);color:var(--ink-soft);margin:9px 0 0}
+  .updated b{color:var(--ink)}
+  .updated .sep{opacity:.5;margin:0 8px}
+  .updated input{font:600 12px var(--mono);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:3px 6px;background:#fff}
+  .grid{display:grid;grid-template-columns:minmax(0,1fr) 470px;gap:20px;align-items:start}
+  @media(max-width:880px){.grid{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+  .chart{padding:22px;position:relative}
+  .chart-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .chart-title{font-weight:680;font-size:15px}
+  .toggles{display:flex;gap:8px}
+  .toggle{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .toggle button{font:600 12px var(--sans);border:0;background:#fff;color:var(--ink-soft);padding:6px 12px;cursor:pointer}
+  .toggle button[aria-pressed="true"]{background:var(--ink);color:#fff}
+  .svg-area{display:flex;justify-content:center;padding:6px 0 2px}
+  svg{max-width:100%;height:auto;overflow:visible}
+  .seg{transition:transform .18s ease,opacity .18s ease}
+  .seg.dim{opacity:.32}
+  .slice-label{font:600 12px var(--mono);fill:#fff;pointer-events:none}
+  .center-sum{font:760 24px var(--mono);fill:var(--ink)}
+  .center-cap{font:600 11px var(--mono);fill:var(--ink-soft);letter-spacing:.08em}
+  .center-sub{font:500 11px var(--mono);fill:var(--ink-soft)}
+  .legend{padding:4px 22px 20px}
+  .lg-sector{display:flex;align-items:baseline;gap:8px;margin:14px 0 6px}
+  .lg-dot{width:9px;height:9px;border-radius:3px;flex:none;transform:translateY(1px)}
+  .lg-sname{font-weight:680;font-size:13px}
+  .lg-spct{font:600 12px var(--mono);color:var(--ink-soft);margin-left:auto}
+  .lg-row{display:flex;align-items:center;gap:9px;padding:3px 0 3px 18px;font-size:13px}
+  .lg-row .sw{width:11px;height:11px;border-radius:3px;flex:none}
+  .lg-row .nm{color:#27313d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lg-row .pc{font:500 12px var(--mono);color:var(--ink-soft);margin-left:auto}
+  .lg-row.hot .nm{font-weight:700}
+  .controls{padding:20px}
+  .controls h2{font-size:13px;font-weight:700;margin:0}
+  .rows{display:flex;flex-direction:column;gap:10px}
+  .row{border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff}
+  .row.dragging{opacity:.4}
+  .row.over{box-shadow:inset 0 2px 0 var(--accent)}
+  .row-top{display:grid;grid-template-columns:18px minmax(0,1fr) minmax(0,1.2fr) 24px;gap:7px;align-items:center}
+  .row-bot{display:grid;grid-template-columns:repeat(auto-fit,minmax(86px,1fr));gap:7px;margin-top:9px}
+  .grip{cursor:grab;color:#c2cad4;font-size:14px;text-align:center;line-height:1;user-select:none}
+  .grip:active{cursor:grabbing}
+  .row input{font-family:var(--sans);font-size:13px;border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 9px;width:100%;min-width:0;color:var(--ink)}
+  .row input.r{font-family:var(--mono);text-align:right}
+  .row input.ro{background:var(--line-soft);color:var(--ink-soft)}
+  .row input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+  .sec-cell{position:relative}
+  .sec-cell input{padding-left:24px}
+  .sec-cell .swatch{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:9px;height:9px;border-radius:2px;pointer-events:none}
+  .del{border:0;background:none;color:#b3bcc7;font-size:17px;cursor:pointer;border-radius:8px;line-height:1;padding:4px}
+  .del:hover{color:#d24545;background:#fbeaea}
+  .fld{display:flex;flex-direction:column;gap:3px}
+  .fld>span{font:600 9.5px var(--mono);letter-spacing:.02em;color:var(--ink-soft);padding-left:2px;white-space:nowrap}
+  .add{margin-top:12px;width:100%;border:1px dashed var(--line);background:#fbfcfe;color:var(--ink-soft);font:600 13px var(--sans);padding:10px;border-radius:11px;cursor:pointer}
+  .add:hover{border-color:var(--accent);color:var(--accent)}
+  .sec-colors{margin-top:18px;padding-top:14px;border-top:1px solid var(--line-soft)}
+  .sec-colors h3{font:700 11px var(--sans);margin:0 0 10px;color:var(--ink-soft)}
+  .sc-list{display:flex;flex-wrap:wrap;gap:8px}
+  .sc-item{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:10px;padding:5px 8px 5px 6px}
+  .sc-item input[type=color]{-webkit-appearance:none;appearance:none;border:0;width:20px;height:20px;border-radius:6px;padding:0;background:none;cursor:pointer}
+  .sc-item input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+  .sc-item input[type=color]::-webkit-color-swatch{border:1px solid rgba(0,0,0,.12);border-radius:6px}
+  .sc-item span{font-size:12.5px;font-weight:600}
+  .summary{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line-soft)}
+  .chip{flex:1;min-width:108px}
+  .chip .v{font:680 15px var(--mono);white-space:nowrap}
+  .chip .v.pf{color:var(--profit)} .chip .v.ls{color:var(--loss)}
+  .chip .k{font-size:11px;color:var(--ink-soft);margin-top:1px}
+  .tip{position:fixed;pointer-events:none;z-index:9;background:var(--ink);color:#fff;font-size:12px;padding:6px 9px;border-radius:8px;opacity:0;transition:opacity .12s;white-space:nowrap}
+  .tip .tp{font-family:var(--mono);font-weight:700;margin:0 6px}
+  footer{max-width:1120px;margin:18px auto 0;color:var(--ink-soft);font-size:11.5px;text-align:center}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+  @media(max-width:640px){
+    body{padding:16px 10px 44px}
+    input,select,textarea{font-size:16px !important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Portfolio · KR</div>
+    <h1>포트폴리오 · 국장</h1>
+    <p class="sub">섹터·종목과 <b>매입금액·수익률</b>을 입력하면 <b>평가금액과 비중이 자동</b>으로 계산됩니다(평가금액 = 매입금액 × (1+수익률), 비중 = 평가금액 비율).</p>
+    <p class="updated">마지막 업데이트: <b id="updTs">—</b><span class="sep">·</span>기준일 <input type="date" id="baseDate" title="데이터 기준일"></p>
+  </header>
+
+  <div class="grid">
+    <section class="panel chart">
+      <div class="chart-head">
+        <span class="chart-title">포트폴리오 구성</span>
+        <div class="toggles">
+          <div class="toggle" role="group" aria-label="기준">
+            <button id="bEval" aria-pressed="true">평가금액</button>
+            <button id="bBuy" aria-pressed="false">매입금액</button>
+          </div>
+          <div class="toggle" role="group" aria-label="모양">
+            <button id="bDonut" aria-pressed="true">도넛</button>
+            <button id="bPie" aria-pressed="false">파이</button>
+          </div>
+        </div>
+      </div>
+      <div class="svg-area">
+        <svg id="chart" viewBox="0 0 320 320" width="360" height="360" role="img" aria-label="비중 차트"></svg>
+      </div>
+      <div class="legend" id="legend"></div>
+    </section>
+
+    <section class="panel controls">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <h2>종목 입력</h2>
+        <button id="expBtn" style="border:1px solid #e3e7ee;background:#fff;color:#5b6675;font:600 12px system-ui;padding:6px 11px;border-radius:9px;cursor:pointer">내보내기</button>
+      </div>
+      <div class="rows" id="rows"></div>
+      <button class="add" id="add">+ 행 추가</button>
+      <div class="sec-colors"><h3>섹터 색상</h3><div class="sc-list" id="scList"></div></div>
+      <div class="summary" id="summary"></div>
+    </section>
+  </div>
+</div>
+<div class="tip" id="tip"></div>
+<footer>차트는 선택한 기준(평가/매입)의 합계를 100%로 정규화 · 데이터는 이 브라우저에 자동 저장 · 정보 정리용이며 투자 권유가 아닙니다</footer>
+
+<script>
+(function(){
+  "use strict";
+  const TAU=Math.PI*2, SVG="http://www.w3.org/2000/svg";
+  const PKEY="toolkit:pie1";   /*__PKEY__*/
+  let data=[
+    /*__SEED__*/
+    {sector:"반도체",name:"삼성전자",       amount:6240000, roi:15},
+    {sector:"반도체",name:"SK하이닉스",     amount:2020000, roi:170},
+    {sector:"전력",  name:"두산에너빌리티", amount:1630000, roi:-8},
+    {sector:"전력",  name:"HD현대일렉트릭", amount:1290000, roi:40},
+    {sector:"자동차",name:"현대차",         amount:2740000, roi:-27},
+    /*__ENDSEED__*/
+  ];
+  let donut=true, basis="eval", hot=null, dragFrom=null, lastSig=null;
+  let sectorColors={};
+  let updatedAt=null, baseDate="", loaded=false;
+
+  const calcEval=d=>{const a=Number(d.amount)||0,r=Number(d.roi)||0; return a*(1+r/100);};
+  function recompute(){
+    data.forEach(d=>{ d.eval=calcEval(d); });
+    const tot=data.reduce((s,d)=>s+(Number(d.eval)||0),0);
+    data.forEach(d=>{ d.ratio = tot? (Number(d.eval)||0)/tot*100 : 0; });
+  }
+
+  try{const _s=localStorage.getItem(PKEY);if(_s){const _o=JSON.parse(_s);
+    if(_o&&Array.isArray(_o.data)&&_o.data.length)data=_o.data;
+    if(_o&&_o.colors&&typeof _o.colors==="object")sectorColors=_o.colors;
+    if(_o&&_o.updatedAt)updatedAt=_o.updatedAt;
+    if(_o&&_o.baseDate)baseDate=_o.baseDate;}}catch(e){}
+  data.forEach(d=>{
+    if(d.amount==null){ if(d.eval!=null&&d.roi!=null){const r=Number(d.roi)||0;d.amount=r<=-100?Number(d.eval):Number(d.eval)/(1+r/100);} else d.amount=Number(d.eval)||0; }
+    if(d.roi==null)d.roi=0;
+  });
+  recompute();
+  function persist(){ if(loaded) updatedAt=Date.now(); renderUpdated();
+    try{localStorage.setItem(PKEY,JSON.stringify({data,colors:sectorColors,updatedAt,baseDate}));}catch(e){} }
+  function fmtDate(ts){const d=new Date(ts);const p=n=>String(n).padStart(2,"0");
+    return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes());}
+  function renderUpdated(){const el=document.getElementById("updTs");if(el)el.textContent=updatedAt?fmtDate(updatedAt):"—";}
+
+  const PALETTE=[170,265,36,300,192,95,24,230];
+  function autoHueMap(){const m={};let p=0;
+    for(const d of data){const s=(d.sector||"").trim();if(s in m)continue;
+      if(s.includes("반도체"))m[s]=214; else if(s.includes("전력")||s.includes("전기"))m[s]=4;
+      else{m[s]=PALETTE[p%PALETTE.length];p++;}}
+    return m;}
+  function hslToHex(h,s,l){s/=100;l/=100;const a=s*Math.min(l,1-l);
+    const f=n=>{const k=(n+h/30)%12;return l-a*Math.max(-1,Math.min(k-3,Math.min(9-k,1)));};
+    const to=x=>Math.round(255*x).toString(16).padStart(2,"0");return "#"+to(f(0))+to(f(8))+to(f(4));}
+  function hexToHsl(hex){let h=(hex||"").replace("#","");if(h.length===3)h=h.split("").map(c=>c+c).join("");
+    const r=parseInt(h.slice(0,2),16)/255,g=parseInt(h.slice(2,4),16)/255,b=parseInt(h.slice(4,6),16)/255;
+    const mx=Math.max(r,g,b),mn=Math.min(r,g,b);let hh,s,l=(mx+mn)/2;
+    if(mx===mn){hh=0;s=0;}else{const d=mx-mn;s=l>.5?d/(2-mx-mn):d/(mx+mn);
+      switch(mx){case r:hh=(g-b)/d+(g<b?6:0);break;case g:hh=(b-r)/d+2;break;default:hh=(r-g)/d+4;}hh/=6;}
+    return {h:hh*360,s:s*100,l:l*100};}
+  function baseHex(sector,hues){const s=(sector||"").trim();if(sectorColors[s])return sectorColors[s];
+    const hue=hues[s];return hue==null?"#9aa4b0":hslToHex(hue,68,50);}
+  function shade(bHex,idx,count){if(count<=1)return bHex;const {h,s}=hexToHsl(bHex);
+    const L=62-(idx/(count-1))*24,S=Math.max(45,Math.min(82,s));return `hsl(${h} ${S}% ${L}%)`;}
+  function decorate(){const hues=autoHueMap();const order=[],counts={},seen={},run={};
+    for(const d of data){const s=(d.sector||"").trim();if(!(s in seen)){seen[s]=true;order.push(s);}counts[s]=(counts[s]||0)+1;}
+    return data.map(d=>{const s=(d.sector||"").trim();run[s]=(run[s]==null?0:run[s]+1);const bh=baseHex(s,hues);
+      return {...d,sector:s,_base:bh,_color:shade(bh,run[s],counts[s]||1)};});}
+
+  const val=d=>basis==="eval"?(Number(d.eval)||0):(Number(d.amount)||0);
+  const num=n=>Math.round(n).toLocaleString("ko-KR");
+  const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+  const chart=document.getElementById("chart"),legendEl=document.getElementById("legend"),tip=document.getElementById("tip");
+  function pt(cx,cy,r,a){return [cx+r*Math.cos(a),cy+r*Math.sin(a)];}
+  function segPath(cx,cy,rO,rI,a0,a1){const lg=(a1-a0)%TAU>Math.PI?1:0;
+    const [x0,y0]=pt(cx,cy,rO,a0),[x1,y1]=pt(cx,cy,rO,a1);
+    if(rI<=0)return `M ${cx} ${cy} L ${x0} ${y0} A ${rO} ${rO} 0 ${lg} 1 ${x1} ${y1} Z`;
+    const [x2,y2]=pt(cx,cy,rI,a1),[x3,y3]=pt(cx,cy,rI,a0);
+    return `M ${x0} ${y0} A ${rO} ${rO} 0 ${lg} 1 ${x1} ${y1} L ${x2} ${y2} A ${rI} ${rI} 0 ${lg} 0 ${x3} ${y3} Z`;}
+  function addText(x,y,t,cls){const e=document.createElementNS(SVG,"text");e.setAttribute("x",x);e.setAttribute("y",y);
+    e.setAttribute("text-anchor","middle");e.setAttribute("dominant-baseline","central");e.setAttribute("class",cls);e.textContent=t;chart.appendChild(e);}
+
+  function render(){
+    const items=decorate();
+    const valid=items.map((d,i)=>({...d,_i:i})).filter(d=>val(d)>0&&d.name.trim()!=="");
+    const total=valid.reduce((s,d)=>s+val(d),0);
+    const totalEval=data.reduce((s,d)=>s+(Number(d.eval)||0),0);
+    const totalBuy=data.reduce((s,d)=>s+(Number(d.amount)||0),0);
+    const pnl=totalEval-totalBuy, pnlPct=totalBuy>0?pnl/totalBuy*100:0;
+
+    chart.innerHTML="";
+    const cx=160,cy=160,rO=132,rI=donut?80:0;
+    if(total<=0){addText(cx,cy,(basis==="eval"?"평가금액은 매입금액·수익률로 자동 계산":"매입금액을 입력하세요"),"center-cap");}
+    else{let a=-Math.PI/2;
+      valid.forEach(d=>{const frac=val(d)/total,a1=a+frac*TAU,mid=(a+a1)/2;
+        const path=document.createElementNS(SVG,"path");path.setAttribute("d",segPath(cx,cy,rO,rI,a,a1));
+        path.setAttribute("fill",d._color);path.setAttribute("stroke","#fff");path.setAttribute("stroke-width","2");path.setAttribute("stroke-linejoin","round");
+        path.setAttribute("class","seg"+(hot!=null&&hot!==d._i?" dim":""));
+        if(hot===d._i)path.setAttribute("transform",`translate(${Math.cos(mid)*8} ${Math.sin(mid)*8})`);
+        path.addEventListener("mouseenter",e=>{hot=d._i;render();showTip(e,d,frac);});
+        path.addEventListener("mousemove",moveTip);path.addEventListener("mouseleave",()=>{hot=null;hideTip();render();});
+        chart.appendChild(path);
+        if(frac>0.05){const lr=(rO+rI)/2,[lx,ly]=pt(cx,cy,lr,mid);addText(lx,ly,(frac*100).toFixed(0)+"%","slice-label");}
+        a=a1;});
+      if(donut){const nSec=new Set(valid.map(d=>d.sector)).size;
+        addText(cx,cy-12,"₩"+num(basis==="eval"?totalEval:totalBuy),"center-sum");
+        addText(cx,cy+10,basis==="eval"?"총 평가금액":"총 매입금액","center-cap");
+        addText(cx,cy+27,valid.length+"종목 · "+nSec+"섹터","center-sub");}
+    }
+
+    legendEl.innerHTML="";
+    const order=[...new Set(items.filter(d=>d.name.trim()&&val(d)>0).map(d=>d.sector))];
+    order.forEach(sec=>{const mem=valid.filter(d=>d.sector===sec);if(!mem.length)return;
+      const sPct=mem.reduce((s,d)=>s+val(d),0)/total*100;
+      const head=document.createElement("div");head.className="lg-sector";
+      head.innerHTML=`<span class="lg-dot" style="background:${mem[0]._base}"></span><span class="lg-sname">${esc(sec)}</span><span class="lg-spct">${sPct.toFixed(1)}%</span>`;
+      legendEl.appendChild(head);
+      mem.forEach(d=>{const row=document.createElement("div");row.className="lg-row"+(hot===d._i?" hot":"");
+        row.innerHTML=`<span class="sw" style="background:${d._color}"></span><span class="nm">${esc(d.name)}</span><span class="pc">${(val(d)/total*100).toFixed(1)}%</span>`;
+        row.addEventListener("mouseenter",()=>{hot=d._i;render();});row.addEventListener("mouseleave",()=>{hot=null;render();});
+        legendEl.appendChild(row);});});
+
+    const cnt=data.filter(d=>d.name.trim()).length, nSec=new Set(data.filter(d=>d.sector.trim()).map(d=>d.sector.trim())).size;
+    const pc=pnl>=0?"pf":"ls", sign=pnl>=0?"+":"-";
+    document.getElementById("summary").innerHTML=
+      chip("₩"+num(totalEval),"총 평가금액")+chip("₩"+num(totalBuy),"총 매입금액")+
+      chip(sign+"₩"+num(Math.abs(pnl))+"  "+(pnl>=0?"+":"")+pnlPct.toFixed(1)+"%","총 손익",pc)+
+      chip(cnt+" · "+nSec,"종목 · 섹터");
+    updateRowOutputs();
+    buildSectorColors();
+  }
+  const chip=(v,k,c)=>`<div class="chip"><div class="v ${c||''}">${v}</div><div class="k">${k}</div></div>`;
+  function showTip(e,d,frac){tip.innerHTML=`${esc(d.sector)} · ${esc(d.name)}<span class="tp">${(frac*100).toFixed(1)}%</span>₩${num(val(d))}`;tip.style.opacity="1";moveTip(e);}
+  function moveTip(e){tip.style.left=(e.clientX+14)+"px";tip.style.top=(e.clientY-10)+"px";}
+  function hideTip(){tip.style.opacity="0";}
+
+  const scList=document.getElementById("scList");
+  function buildSectorColors(){const hues=autoHueMap();
+    const secs=[...new Set(data.map(d=>(d.sector||"").trim()).filter(Boolean))];
+    const sig=secs.join("¦");if(sig===lastSig)return;lastSig=sig;scList.innerHTML="";
+    secs.forEach(s=>{const cur=baseHex(s,hues);const it=document.createElement("label");it.className="sc-item";
+      it.innerHTML=`<input type="color" value="${cur}" aria-label="${esc(s)} 색상"><span>${esc(s)}</span>`;
+      it.querySelector("input").addEventListener("input",e=>{sectorColors[s]=e.target.value;refreshRowSwatches();render();persist();});
+      scList.appendChild(it);});}
+
+  const rowsEl=document.getElementById("rows");
+  function rowSwatchColor(sector){return baseHex(sector,autoHueMap());}
+  function refreshRowSwatches(){rowsEl.querySelectorAll(".row").forEach(r=>{const i=+r.dataset.i;const sw=r.querySelector(".swatch");
+    if(sw)sw.style.background=data[i].sector.trim()?rowSwatchColor(data[i].sector):"#cfd6df";});}
+  function updateRowOutputs(){rowsEl.querySelectorAll(".row").forEach(r=>{const i=+r.dataset.i;if(!data[i])return;
+    const ev=r.querySelector('input[data-k="eval"]');if(ev)ev.value=Math.round(data[i].eval||0);
+    const rt=r.querySelector('input[data-k="ratio"]');if(rt)rt.value=(data[i].ratio||0).toFixed(1);});}
+  function fld(label,k,v,i,step,ro){
+    return `<label class="fld"><span>${label}</span>`+
+      `<input class="r${ro?' ro':''}" data-i="${i}" data-k="${k}" type="number" step="${step}" value="${v}"${ro?" readonly tabindex=\"-1\"":""}></label>`;}
+  function buildRows(){rowsEl.innerHTML="";
+    data.forEach((d,i)=>{const row=document.createElement("div");row.className="row";row.dataset.i=i;
+      const sc=d.sector.trim()?rowSwatchColor(d.sector):"#cfd6df";
+      row.innerHTML=
+        `<div class="row-top">`+
+          `<span class="grip" draggable="true" title="끌어서 순서 변경">⋮⋮</span>`+
+          `<span class="sec-cell"><span class="swatch" style="background:${sc}"></span>`+
+            `<input data-i="${i}" data-k="sector" value="${esc(d.sector)}" placeholder="섹터"></span>`+
+          `<input data-i="${i}" data-k="name" value="${esc(d.name)}" placeholder="종목명">`+
+          `<button class="del" data-del="${i}" title="삭제" aria-label="행 삭제">×</button>`+
+        `</div>`+
+        `<div class="row-bot">`+
+          fld("매입금액","amount",d.amount,i,"10000")+
+          fld("수익률 %","roi",d.roi,i,"0.1")+
+          fld("평가금액(자동)","eval",Math.round(d.eval||0),i,"1",true)+
+          fld("비중 %(자동)","ratio",(d.ratio||0).toFixed(1),i,"0.1",true)+
+        `</div>`;
+      rowsEl.appendChild(row);});}
+
+  rowsEl.addEventListener("input",e=>{const t=e.target;if(t.dataset.i==null)return;
+    const i=+t.dataset.i,k=t.dataset.k;
+    if(k==="eval"||k==="ratio")return;
+    if(k==="sector"||k==="name")data[i][k]=t.value;
+    else if(k==="roi")data[i].roi=t.value===""?0:(parseFloat(t.value)||0);
+    else data[i][k]=t.value===""?0:Math.max(0,+t.value);
+    recompute();
+    if(k==="sector"){const sw=t.closest(".row").querySelector(".swatch");if(sw)sw.style.background=t.value.trim()?rowSwatchColor(t.value):"#cfd6df";}
+    render();persist();});
+  rowsEl.addEventListener("click",e=>{const b=e.target.closest("[data-del]");if(!b)return;
+    data.splice(+b.dataset.del,1);lastSig=null;recompute();buildRows();render();persist();});
+  document.getElementById("add").addEventListener("click",()=>{
+    data.push({sector:"",name:"",amount:0,roi:0,eval:0,ratio:0});lastSig=null;recompute();buildRows();render();persist();
+    const ins=rowsEl.querySelectorAll('.sec-cell input');if(ins.length)ins[ins.length-1].focus();});
+
+  rowsEl.addEventListener("dragstart",e=>{const g=e.target.closest(".grip");if(!g)return;
+    const row=g.closest(".row");dragFrom=+row.dataset.i;row.classList.add("dragging");
+    e.dataTransfer.effectAllowed="move";try{e.dataTransfer.setData("text/plain",String(dragFrom));}catch(_){}});
+  rowsEl.addEventListener("dragover",e=>{if(dragFrom==null)return;e.preventDefault();
+    const row=e.target.closest(".row");if(!row)return;
+    rowsEl.querySelectorAll(".row.over").forEach(r=>r.classList.remove("over"));row.classList.add("over");});
+  rowsEl.addEventListener("dragleave",e=>{const row=e.target.closest(".row");if(row)row.classList.remove("over");});
+  rowsEl.addEventListener("drop",e=>{if(dragFrom==null)return;e.preventDefault();
+    const row=e.target.closest(".row");if(!row){cleanupDrag();return;}
+    let to=+row.dataset.i;const rect=row.getBoundingClientRect();if(e.clientY-rect.top>rect.height/2)to++;
+    const item=data[dragFrom];data.splice(dragFrom,1);if(dragFrom<to)to--;data.splice(to,0,item);
+    cleanupDrag();lastSig=null;recompute();buildRows();render();persist();});
+  rowsEl.addEventListener("dragend",cleanupDrag);
+  function cleanupDrag(){dragFrom=null;rowsEl.querySelectorAll(".dragging,.over").forEach(r=>r.classList.remove("dragging","over"));}
+
+  function bind(id,fn){document.getElementById(id).addEventListener("click",fn);}
+  function setBasis(b){basis=b;document.getElementById("bEval").setAttribute("aria-pressed",b==="eval");
+    document.getElementById("bBuy").setAttribute("aria-pressed",b==="buy");render();}
+  function setShape(d){donut=d;document.getElementById("bDonut").setAttribute("aria-pressed",d);
+    document.getElementById("bPie").setAttribute("aria-pressed",!d);render();}
+  bind("bEval",()=>setBasis("eval"));bind("bBuy",()=>setBasis("buy"));
+  bind("bDonut",()=>setShape(true));bind("bPie",()=>setShape(false));
+
+  document.getElementById("expBtn").addEventListener("click",()=>{
+    const payload={_app:"toolkit",_version:1,_key:PKEY.split(":")[1],data:{[PKEY.split(":")[1]]:data}};
+    try{const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+      const url=URL.createObjectURL(blob);const a=document.createElement("a");
+      a.href=url;a.download=PKEY.split(":")[1]+"-"+new Date().toISOString().slice(0,10)+".json";
+      document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    }catch(e){alert("이 환경에선 내보내기가 막혀 있어요. 파일로 열거나 호스팅하면 됩니다.");}});
+
+  buildRows();render();persist();loaded=true;renderUpdated();
+  const bdEl=document.getElementById("baseDate");
+  if(bdEl){bdEl.value=baseDate||"";bdEl.addEventListener("change",()=>{baseDate=bdEl.value;persist();});}
+})();
+</script>
+</body>
+</html>

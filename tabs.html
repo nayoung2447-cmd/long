@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>도구 모음 · 탭</title>
+<link rel="stylesheet" href="shared.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1f6feb">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="투자도구">
+<script>if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));}</script>
+</head>
+<body>
+  <div id="appbar"></div>
+  <div class="wrap">
+    <div class="pagehead" style="padding-bottom:8px">
+      <div class="eyebrow">Toolkit · Tabs</div>
+      <h1 class="title">도구 모음</h1>
+      <p class="sub">한 화면에서 탭으로 도구를 전환합니다.
+        <a href="index.html" style="color:var(--accent);text-decoration:none;font-weight:600">허브 보기로 전환 →</a></p>
+    </div>
+    <div class="tabbar" id="tabbar" role="tablist"></div>
+    <div class="frame-wrap"><iframe id="frame" title="도구" src="about:blank"></iframe></div>
+  </div>
+  <div class="foot">탭·허브는 같은 도구 목록을 공유해요 — 어느 쪽이든 자유롭게 쓰세요</div>
+
+  <script src="shared.js"></script>
+  <script>
+    mountAppbar("tabs");
+    const bar = document.getElementById("tabbar");
+    const frame = document.getElementById("frame");
+    const tools = APP.TOOLS;
+
+    function select(i){
+      [...bar.children].forEach((b,j)=>b.setAttribute("aria-selected", j===i));
+      frame.src = tools[i].file;
+      Store.save("_lastTab", tools[i].id);
+    }
+    tools.forEach((t,i)=>{
+      const b=document.createElement("button");
+      b.className="tab"; b.textContent=t.name; b.setAttribute("role","tab");
+      b.onclick=()=>select(i);
+      bar.appendChild(b);
+    });
+    if(tools.length){
+      const last = Store.load("_lastTab");
+      const idx = Math.max(0, tools.findIndex(t=>t.id===last));
+      select(idx);
+    }
+  </script>
+</body>
+</html>
