@@ -76,6 +76,14 @@
   .fld>span{font:600 9.5px var(--mono);letter-spacing:.02em;color:var(--ink-soft);padding-left:2px;white-space:nowrap}
   .add{margin-top:12px;width:100%;border:1px dashed var(--line);background:#fbfcfe;color:var(--ink-soft);font:600 13px var(--sans);padding:10px;border-radius:11px;cursor:pointer}
   .add:hover{border-color:var(--accent);color:var(--accent)}
+  .cashbox{margin-top:16px;padding-top:14px;border-top:1px solid var(--line-soft)}
+  .cashbox h3{font:700 11px var(--sans);margin:0 0 10px;color:var(--ink-soft)}
+  .cashrow{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .cashrow label{font-size:12px;font-weight:600;color:var(--ink-soft);width:74px;flex:none}
+  .cashrow input{flex:1;min-width:0;font-family:var(--mono);text-align:right;font-size:13px;border:1px solid var(--line);border-radius:9px;padding:8px 10px;color:var(--ink)}
+  .cashrow input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+  .cashrow .unit{font:600 12px var(--mono);color:var(--ink-soft);width:26px;text-align:left;flex:none}
+  .cashnote{font:500 11px var(--mono);color:var(--ink-soft);margin-top:2px}
   .sec-colors{margin-top:18px;padding-top:14px;border-top:1px solid var(--line-soft)}
   .sec-colors h3{font:700 11px var(--sans);margin:0 0 10px;color:var(--ink-soft)}
   .sc-list{display:flex;flex-wrap:wrap;gap:8px}
@@ -136,6 +144,11 @@
       </div>
       <div class="rows" id="rows"></div>
       <button class="add" id="add">+ 행 추가</button>
+      <div class="cashbox">
+        <h3>현금 (원화)</h3>
+        <div class="cashrow"><label>보유 현금</label><input id="cashKrw" type="number" min="0" step="10000" value="0"><span class="unit">원</span></div>
+        <div class="cashnote" id="cashNote"></div>
+      </div>
       <div class="sec-colors"><h3>섹터 색상</h3><div class="sc-list" id="scList"></div></div>
       <div class="summary" id="summary"></div>
     </section>
@@ -160,7 +173,7 @@
   ];
   let donut=true, basis="eval", hot=null, dragFrom=null, lastSig=null;
   let sectorColors={};
-  let updatedAt=null, baseDate="", loaded=false;
+  let updatedAt=null, baseDate="", loaded=false, cashKrw=0;
 
   const calcEval=d=>{const a=Number(d.amount)||0,r=Number(d.roi)||0; return a*(1+r/100);};
   function recompute(){
@@ -173,14 +186,15 @@
     if(_o&&Array.isArray(_o.data)&&_o.data.length)data=_o.data;
     if(_o&&_o.colors&&typeof _o.colors==="object")sectorColors=_o.colors;
     if(_o&&_o.updatedAt)updatedAt=_o.updatedAt;
-    if(_o&&_o.baseDate)baseDate=_o.baseDate;}}catch(e){}
+    if(_o&&_o.baseDate)baseDate=_o.baseDate;
+    if(_o&&_o.cash)cashKrw=Number(_o.cash.krw)||0;}}catch(e){}
   data.forEach(d=>{
     if(d.amount==null){ if(d.eval!=null&&d.roi!=null){const r=Number(d.roi)||0;d.amount=r<=-100?Number(d.eval):Number(d.eval)/(1+r/100);} else d.amount=Number(d.eval)||0; }
     if(d.roi==null)d.roi=0;
   });
   recompute();
   function persist(){ if(loaded) updatedAt=Date.now(); renderUpdated();
-    try{localStorage.setItem(PKEY,JSON.stringify({data,colors:sectorColors,updatedAt,baseDate}));}catch(e){} }
+    try{localStorage.setItem(PKEY,JSON.stringify({data,colors:sectorColors,updatedAt,baseDate,cash:{krw:cashKrw,krwTotal:cashKrw}}));}catch(e){} }
   function fmtDate(ts){const d=new Date(ts);const p=n=>String(n).padStart(2,"0");
     return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes());}
   function renderUpdated(){const el=document.getElementById("updTs");if(el)el.textContent=updatedAt?fmtDate(updatedAt):"—";}
@@ -364,6 +378,11 @@
   buildRows();render();persist();loaded=true;renderUpdated();
   const bdEl=document.getElementById("baseDate");
   if(bdEl){bdEl.value=baseDate||"";bdEl.addEventListener("change",()=>{baseDate=bdEl.value;persist();});}
+  const ck=document.getElementById("cashKrw"), cn=document.getElementById("cashNote");
+  function noteCash(){const stock=data.reduce((s,d)=>s+(Number(d.eval)||0),0);const tot=stock+cashKrw;
+    cn.textContent=tot>0?("주식 "+Math.round(stock/tot*100)+"% · 현금 "+Math.round(cashKrw/tot*100)+"%  (총 ₩"+Math.round(tot).toLocaleString("ko-KR")+")"):"";}
+  if(ck){ck.value=cashKrw||0;ck.addEventListener("input",()=>{cashKrw=ck.value===""?0:Math.max(0,+ck.value);noteCash();persist();});}
+  const _origRender=render; render=function(){_origRender();noteCash();}; noteCash();
 })();
 </script>
 </body>

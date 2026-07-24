@@ -24,12 +24,24 @@
   #sumBox{transition:padding .18s ease}
   #sumBox.tight{padding:12px 20px}
   #sumBox.tight .pb-head{margin-bottom:10px}
-  .sumgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;transition:gap .18s ease}
-  .sumgrid.collapsed{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-  .sumgrid.collapsed .sumcell{padding:9px 8px}
-  .sumgrid.collapsed .tv,.sumgrid.collapsed .pv,.sumgrid.collapsed .kk,.sumgrid.collapsed .s-empty{display:none}
-  .sumgrid.collapsed .lb{font-size:12px}
+  #sumBox.tight .allobar{margin-bottom:10px}
+  .sumgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .sumgrid .sumcell{padding:9px 10px}
+  .sumcell .tv{font:740 16px ui-monospace,monospace;margin-top:4px}
+  .sumcell .pv{font:640 11.5px ui-monospace,monospace;margin-top:2px}
+  .sumcell .kk{display:none}
+  .sumgrid.collapsed .tv,.sumgrid.collapsed .pv,.sumgrid.collapsed .s-empty{display:none}
   .sumgrid.collapsed .dots{display:block}
+  /* 비율 막대 */
+  .allobar{margin:2px 0 14px}
+  .allobar .track{display:flex;height:22px;border-radius:7px;overflow:hidden;background:var(--line-soft,#eef1f6)}
+  .allobar .seg{height:100%}
+  .allobar .lg{display:flex;flex-wrap:wrap;gap:12px 16px;margin-top:9px}
+  .allobar .lg .it{display:flex;align-items:center;gap:6px;font-size:12px;color:#27313d}
+  .allobar .lg .sw{width:10px;height:10px;border-radius:3px;flex:none}
+  .allobar .lg .pc{font:700 12px ui-monospace,monospace}
+  .allobar .lg .am{font:500 11px ui-monospace,monospace;color:var(--ink-soft,#5b6675)}
+  .allobar .empty{font-size:12.5px;color:var(--ink-soft,#5b6675)}
   .dots{display:none;font:700 15px ui-monospace,monospace;color:var(--ink-soft,#5b6675);letter-spacing:.12em;margin-top:5px}
   .sumcell{border:1px solid var(--line-soft,#eef1f6);border-radius:12px;padding:12px 14px}
   .sumcell .lb{font:700 11px ui-monospace,monospace;letter-spacing:.06em;color:var(--ink-soft,#5b6675)}
@@ -87,6 +99,7 @@
     <section class="panelbox" id="sumBox">
       <div class="pb-head"><h2>요약</h2><span class="meta" id="sumUpd"></span><span class="sp"></span>
         <button class="pbtn" id="eyeBtn" aria-pressed="true">금액 보기</button></div>
+      <div class="allobar" id="alloBar"></div>
       <div class="sumgrid" id="sumGrid"></div>
     </section>
 
@@ -154,30 +167,52 @@
         if(!Array.isArray(arr)||!arr.length)return null;
         let ev=0,buy=0;arr.forEach(x=>{const a=Number(x.amount)||0,r=Number(x.roi)||0;
           const e=(x.eval!=null&&x.eval!=="")?Number(x.eval):a*(1+r/100);ev+=e;buy+=a;});
-        return {ev,buy,updatedAt:(o&&o.updatedAt)||null};}catch(e){return null;}}
+        const cash=(o&&o.cash)||{};
+        return {ev,buy,updatedAt:(o&&o.updatedAt)||null,
+          cashKrwTotal:Number(cash.krwTotal)||0, cashUsdKrw:(Number(cash.usd)||0)*(Number(cash.rate)||0), cashKrwOnly:Number(cash.krw)||0};}catch(e){return null;}}
 
       /* ---- 5) 요약 위젯 ---- */
       function cell(label,t){
-        if(!t)return '<div class="sumcell"><div class="lb">'+label+'</div><div class="dots">•••</div><div class="s-empty">데이터 없음 — 포트폴리오에 입력하세요</div></div>';
+        if(!t)return '<div class="sumcell"><div class="lb">'+label+'</div><div class="dots">•••</div><div class="s-empty">없음</div></div>';
+        const asset=t.ev+(t.cashKrwTotal||0);
         const pnl=t.ev-t.buy, pct=t.buy>0?pnl/t.buy*100:0, c=pnl>=0?"pf":"ls", sg=pnl>=0?"+":"-";
         const pnlTxt=sg+"₩"+Math.round(Math.abs(pnl)).toLocaleString("ko-KR")+" ("+(pnl>=0?"+":"")+pct.toFixed(1)+"%)";
-        return '<div class="sumcell"><div class="lb">'+label+'</div>'+
+        return '<div class="sumcell"><div class="lb">'+label+' 총자산</div>'+
           '<div class="dots">•••</div>'+
-          '<div class="tv">'+won(t.ev)+'</div>'+
-          '<div class="pv '+c+'">'+pnlTxt+'</div>'+
-          '<div class="kk">총평가 · 손익</div></div>';
+          '<div class="tv">'+won(asset)+'</div>'+
+          '<div class="pv '+c+'" title="주식 손익">'+pnlTxt+'</div></div>';
       }
       function renderSummary(){
         const kr=pieTotals("toolkit:pie1"), us=pieTotals("toolkit:pie-us");
         let tot=null;
-        if(kr||us)tot={ev:(kr?kr.ev:0)+(us?us.ev:0),buy:(kr?kr.buy:0)+(us?us.buy:0)};
+        if(kr||us)tot={ev:(kr?kr.ev:0)+(us?us.ev:0),buy:(kr?kr.buy:0)+(us?us.buy:0),
+          cashKrwTotal:(kr?kr.cashKrwTotal:0)+(us?us.cashKrwTotal:0)};
         $("sumGrid").innerHTML=cell("국장",kr)+cell("미장",us)+cell("합계",tot);
+        renderAllo(kr,us);
         const ts=Math.max(kr&&kr.updatedAt||0,us&&us.updatedAt||0);
         $("sumUpd").textContent=(HIDE||!ts)?"":("마지막 업데이트: "+fmtTs(ts));
         $("sumGrid").classList.toggle("collapsed",HIDE);
         $("sumBox").classList.toggle("tight",HIDE);
         $("eyeBtn").textContent=HIDE?"금액 보기":"금액 숨기기";
         $("eyeBtn").setAttribute("aria-pressed",HIDE?"true":"false");
+      }
+      function renderAllo(kr,us){
+        const usdCash=(us?us.cashUsdKrw:0);
+        const krwCash=(kr?kr.cashKrwTotal:0)+(us?us.cashKrwOnly:0);
+        const segs=[
+          {k:"국장 주식", v:(kr?kr.ev:0), c:"#c5221f"},
+          {k:"미장 주식", v:(us?us.ev:0), c:"#1f6feb"},
+          {k:"현금·달러", v:usdCash,      c:"#188038"},
+          {k:"현금·원화", v:krwCash,      c:"#8a94a3"},
+        ].filter(s=>s.v>0);
+        const total=segs.reduce((a,b)=>a+b.v,0);
+        const el=$("alloBar");
+        if(total<=0){el.innerHTML='<div class="empty">포트폴리오·현금을 입력하면 미장/국장/현금 비율이 여기 표시돼요.</div>';return;}
+        const bar=segs.map(s=>'<div class="seg" style="width:'+(s.v/total*100)+'%;background:'+s.c+'" title="'+s.k+' '+(s.v/total*100).toFixed(1)+'%"></div>').join("");
+        const lg=segs.map(s=>'<span class="it"><span class="sw" style="background:'+s.c+'"></span>'+s.k+
+          ' <span class="pc">'+(s.v/total*100).toFixed(1)+'%</span>'+
+          (HIDE?'':' <span class="am">'+won(s.v)+'</span>')+'</span>').join("");
+        el.innerHTML='<div class="track">'+bar+'</div><div class="lg">'+lg+'</div>';
       }
       $("eyeBtn").addEventListener("click",()=>{HIDE=!HIDE;
         try{localStorage.setItem(EYE,HIDE?"1":"0");}catch(e){}
