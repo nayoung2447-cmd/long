@@ -26,7 +26,18 @@
   #sumBox.tight .pb-head{margin-bottom:10px}
   #sumBox.tight .allobar{margin-bottom:10px}
   .sumgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-  .sumgrid .sumcell{padding:9px 10px}
+  .sumgrid .sumcell{padding:9px 10px;min-width:0}
+  .sumcell .lb,.sumcell .tv,.sumcell .pv{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  @media(max-width:640px){
+    .sumgrid{grid-template-columns:1fr;gap:6px}
+    .sumgrid .sumcell{display:flex;align-items:baseline;gap:8px;padding:8px 10px}
+    .sumcell .lb{font-size:11px;width:74px;flex:none;margin:0}
+    .sumcell .dots{margin:0}
+    .sumcell .tv{font-size:15px;margin:0}
+    .sumcell .pv{margin:0 0 0 auto;font-size:11px}
+    .allobar .lg{gap:6px 12px}
+    .allobar .lg .it{font-size:11px}
+  }
   .sumcell .tv{font:740 16px ui-monospace,monospace;margin-top:4px}
   .sumcell .pv{font:640 11.5px ui-monospace,monospace;margin-top:2px}
   .sumcell .kk{display:none}
@@ -42,6 +53,10 @@
   .allobar .lg .pc{font:700 12px ui-monospace,monospace}
   .allobar .lg .am{font:500 11px ui-monospace,monospace;color:var(--ink-soft,#5b6675)}
   .allobar .empty{font-size:12.5px;color:var(--ink-soft,#5b6675)}
+  .allobar .ccy{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line,#e3e7ee)}
+  .allobar .ccy .it{display:flex;align-items:center;gap:6px;font-size:12px;color:#27313d}
+  .allobar .ccy .sw{width:10px;height:10px;border-radius:3px}
+  .allobar .ccy .pc{font:700 12px ui-monospace,monospace}
   .dots{display:none;font:700 15px ui-monospace,monospace;color:var(--ink-soft,#5b6675);letter-spacing:.12em;margin-top:5px}
   .sumcell{border:1px solid var(--line-soft,#eef1f6);border-radius:12px;padding:12px 14px}
   .sumcell .lb{font:700 11px ui-monospace,monospace;letter-spacing:.06em;color:var(--ink-soft,#5b6675)}
@@ -212,7 +227,13 @@
         const lg=segs.map(s=>'<span class="it"><span class="sw" style="background:'+s.c+'"></span>'+s.k+
           ' <span class="pc">'+(s.v/total*100).toFixed(1)+'%</span>'+
           (HIDE?'':' <span class="am">'+won(s.v)+'</span>')+'</span>').join("");
-        el.innerHTML='<div class="track">'+bar+'</div><div class="lg">'+lg+'</div>';
+        // 원화 vs 외화(달러) 비중: 미장 주식+달러현금 = 외화, 국장 주식+원화현금 = 원화
+        const foreign=(us?us.ev:0)+usdCash;
+        const domestic=(kr?kr.ev:0)+krwCash;
+        const ft=foreign+domestic;
+        const ccy=ft>0?('<div class="ccy"><span class="it"><span class="sw" style="background:#11161d"></span>원화 자산 <span class="pc">'+(domestic/ft*100).toFixed(1)+'%</span></span>'+
+          '<span class="it"><span class="sw" style="background:#c2772a"></span>외화(달러) 자산 <span class="pc">'+(foreign/ft*100).toFixed(1)+'%</span></span></div>'):'';
+        el.innerHTML='<div class="track">'+bar+'</div><div class="lg">'+lg+'</div>'+ccy;
       }
       $("eyeBtn").addEventListener("click",()=>{HIDE=!HIDE;
         try{localStorage.setItem(EYE,HIDE?"1":"0");}catch(e){}
