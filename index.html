@@ -38,8 +38,8 @@
     .allobar .lg{gap:6px 12px}
     .allobar .lg .it{font-size:11px}
   }
-  .sumcell .tv{font:740 16px ui-monospace,monospace;margin-top:4px}
-  .sumcell .pv{font:640 11.5px ui-monospace,monospace;margin-top:2px}
+  .sumcell .tv{font:740 14px ui-monospace,monospace;margin-top:3px;overflow:hidden;text-overflow:ellipsis}
+  .sumcell .pv{font:640 10.5px ui-monospace,monospace;margin-top:2px;overflow:hidden;text-overflow:ellipsis}
   .sumcell .kk{display:none}
   .sumgrid.collapsed .tv,.sumgrid.collapsed .pv,.sumgrid.collapsed .s-empty{display:none}
   .sumgrid.collapsed .dots{display:block}
@@ -69,15 +69,15 @@
   .histchart{margin:2px 0 10px}
   .histchart svg{width:100%;height:auto;display:block}
   .h-empty{font-size:12.5px;color:var(--ink-soft,#5b6675);padding:6px 0 2px}
-  .hrow{display:flex;align-items:center;gap:10px;padding:8px 4px;border-top:1px solid var(--line-soft,#eef1f6);font-size:12.5px}
+  .hrow{display:grid;grid-template-columns:auto auto auto 1fr auto;align-items:center;gap:4px 8px;padding:8px 2px;border-top:1px solid var(--line-soft,#eef1f6);font-size:11.5px}
   .hrow:first-child{border-top:0}
-  .hrow .hd{font:600 12px ui-monospace,monospace;color:var(--ink-soft,#5b6675);width:88px;flex:none}
-  .hrow .ht{font:700 13px ui-monospace,monospace}
-  .hrow .hp{font:640 12px ui-monospace,monospace}
+  .hrow .hd{font:600 11px ui-monospace,monospace;color:var(--ink-soft,#5b6675);white-space:nowrap}
+  .hrow .ht{font:700 12px ui-monospace,monospace;white-space:nowrap}
+  .hrow .hp{font:640 11px ui-monospace,monospace;white-space:nowrap}
   .hp.pf{color:#c5221f}.hp.ls{color:#1f6feb}
   .autotag{font:700 9.5px ui-monospace,monospace;background:var(--line-soft,#eef1f6);color:var(--ink-soft,#5b6675);padding:2px 6px;border-radius:5px;margin-left:6px;vertical-align:1px}
-  .hrow .hs{font:500 11px ui-monospace,monospace;color:var(--ink-soft,#5b6675)}
-  .hrow .sp{flex:1}
+  .hrow .hs{font:500 10px ui-monospace,monospace;color:var(--ink-soft,#5b6675);grid-column:1/-1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:-2px}
+  .hrow .sp{display:none}
   .hrow .hx{border:0;background:none;color:#b3bcc7;font-size:15px;cursor:pointer;border-radius:6px;padding:2px 6px}
   .hrow .hx:hover{color:#d24545;background:#fbeaea}
   /* snapshots */
@@ -159,11 +159,7 @@
         '<div class="go">열기 →</div>';
       box.appendChild(a);
     });
-    const hint = document.createElement("div");
-    hint.className = "card ghost";
-    hint.innerHTML = '<div class="plus">+</div><div style="margin-top:8px;font-weight:600">새 도구 추가</div>'+
-      '<div style="font-size:12px;margin-top:4px">shared.js의 TOOLS 배열에<br>한 줄만 추가하세요</div>';
-    box.appendChild(hint);
+    /* (새 도구 추가 카드 제거) */
 
     (function(){
       const SKEY="toolkit:snapshots", HKEY="toolkit:history", EYE="toolkit:hub-hide";
@@ -192,7 +188,7 @@
         const asset=t.ev+(t.cashKrwTotal||0);
         const pnl=t.ev-t.buy, pct=t.buy>0?pnl/t.buy*100:0, c=pnl>=0?"pf":"ls", sg=pnl>=0?"+":"-";
         const pnlTxt=sg+"₩"+Math.round(Math.abs(pnl)).toLocaleString("ko-KR")+" ("+(pnl>=0?"+":"")+pct.toFixed(1)+"%)";
-        return '<div class="sumcell"><div class="lb">'+label+' 총자산</div>'+
+        return '<div class="sumcell"><div class="lb">'+label+'</div>'+
           '<div class="dots">•••</div>'+
           '<div class="tv">'+won(asset)+'</div>'+
           '<div class="pv '+c+'" title="주식 손익">'+pnlTxt+'</div></div>';
@@ -284,9 +280,9 @@
         $("histList").innerHTML=recent.length?recent.map(x=>
           '<div class="hrow"><span class="hd">'+fmtD(x.ts)+'</span>'+
           '<span class="ht">'+esc(amt(won(x.total)))+'</span>'+
-          (x.totalBuy!=null?'<span class="hp '+((x.total-x.totalBuy)>=0?'pf':'ls')+'">'+esc(amt(((x.total-x.totalBuy)>=0?'+':'-')+"₩"+Math.abs(x.total-x.totalBuy).toLocaleString("ko-KR")))+'</span>':'')+
-          '<span class="hs">국장 '+esc(amt(won(x.kr)))+' · 미장 '+esc(amt(won(x.us)))+'</span>'+
-          '<span class="sp"></span><button class="hx" data-hdel="'+x.id+'" title="이 기록 삭제">×</button></div>').join("")
+          (x.totalBuy!=null?'<span class="hp '+((x.total-x.totalBuy)>=0?'pf':'ls')+'">'+esc(amt(((x.total-x.totalBuy)>=0?'+':'-')+"₩"+Math.abs(x.total-x.totalBuy).toLocaleString("ko-KR")))+'</span>':'<span></span>')+
+          '<span class="sp"></span><button class="hx" data-hdel="'+x.id+'" title="이 기록 삭제">×</button>'+
+          '<span class="hs">국장 '+esc(amt(won(x.kr)))+' · 미장 '+esc(amt(won(x.us)))+'</span></div>').join("")
           +(h.length>12?'<div class="h-empty">외 '+(h.length-12)+'개 기록</div>':'')
           :'<div class="h-empty">아직 기록이 없어요 — "지금 자산 기록"을 눌러 시작하세요.</div>';
       }
@@ -356,7 +352,17 @@
       renderSummary();renderHistory();renderSnaps();
     })();
 
-    if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));}
+    if("serviceWorker" in navigator){addEventListener("load",()=>{
+      navigator.serviceWorker.register("./sw.js").then(reg=>{
+        function prompt(nw){nw&&nw.postMessage&&nw.postMessage("skipWaiting");}
+        if(reg.waiting)prompt(reg.waiting);
+        reg.addEventListener("updatefound",()=>{const nw=reg.installing;if(!nw)return;
+          nw.addEventListener("statechange",()=>{if(nw.state==="installed"&&navigator.serviceWorker.controller)prompt(nw);});});
+        setInterval(()=>reg.update(),60000);
+      }).catch(()=>{});
+      let refreshing=false;
+      navigator.serviceWorker.addEventListener("controllerchange",()=>{if(refreshing)return;refreshing=true;location.reload();});
+    });}
   </script>
 </body>
 </html>
