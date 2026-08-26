@@ -198,7 +198,7 @@
         let tot=null;
         if(kr||us)tot={ev:(kr?kr.ev:0)+(us?us.ev:0),buy:(kr?kr.buy:0)+(us?us.buy:0),
           cashKrwTotal:(kr?kr.cashKrwTotal:0)+(us?us.cashKrwTotal:0)};
-        $("sumGrid").innerHTML=cell("국장",kr)+cell("미장",us)+cell("합계",tot);
+        $("sumGrid").innerHTML="";  /* 국장/미장/합계 칸 제거 — 비율 막대만 표시 */
         renderAllo(kr,us);
         const ts=Math.max(kr&&kr.updatedAt||0,us&&us.updatedAt||0);
         $("sumUpd").textContent=(HIDE||!ts)?"":("마지막 업데이트: "+fmtTs(ts));

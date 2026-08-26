@@ -110,6 +110,26 @@
     body{padding:16px 10px 44px}
     input,select,textarea{font-size:16px !important}
   }
+  /* 목록형 행 */
+  .jli{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:9px;cursor:pointer;border:1px solid transparent}
+  .jli:hover{background:var(--line-soft);border-color:var(--line)}
+  .jli.need{background:#fffdf8}
+  .jli .d{font:600 11px var(--mono);color:var(--ink-soft);width:70px;flex:none}
+  .jli .n{font-weight:680;font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .jli .mt{font:600 11px var(--mono);color:var(--ink-soft);flex:none;white-space:nowrap}
+  .jli .rz2{font:700 11px var(--mono);flex:none} .jli .rz2.pf{color:var(--profit)} .jli .rz2.ls{color:var(--loss)}
+  .jli .nb{font:700 9px var(--mono);padding:2px 5px;border-radius:4px;background:var(--amber-bg);color:var(--amber);flex:none}
+  .jli .ap{font:700 9px var(--mono);padding:2px 5px;border-radius:4px;background:#eef7f0;color:#188038;flex:none}
+  .jli .arw{color:#c2cad4;font-size:15px;flex:none}
+  /* 팝업 */
+  .jov{position:fixed;inset:0;background:rgba(16,22,30,.44);display:none;align-items:flex-start;justify-content:center;padding:24px 14px;z-index:50;overflow:auto}
+  .jov.on{display:flex}
+  .jmodal{background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(16,22,30,.28);width:100%;max-width:520px;margin:auto;overflow:hidden}
+  .jm-head{display:flex;align-items:center;gap:8px;padding:13px 15px;border-bottom:1px solid var(--line);font-weight:720}
+  .jm-head .bd{font:700 10px var(--mono);padding:2px 7px;border-radius:5px}
+  .jm-x{margin-left:auto;border:0;background:none;color:#9aa4b0;font-size:22px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:8px}
+  .jm-x:hover{background:var(--line-soft);color:#d24545}
+  .jm-body{padding:14px 15px;max-height:calc(100vh - 200px);overflow:auto}
 </style>
 </head>
 <body>
@@ -160,6 +180,9 @@
   </section>
 
   <div id="content"></div>
+  <div class="jov" id="jov"><div class="jmodal" role="dialog" aria-modal="true">
+    <div class="jm-head" id="jmHead"></div><div class="jm-body" id="jmBody"></div>
+  </div></div>
 </div>
 <footer>기록은 이 브라우저에 자동 저장 · 파이1 종목 자동완성 · 실현손익은 매도↔매수 연결 기준 · 정보 정리용 도구</footer>
 
@@ -252,6 +275,15 @@
     if(!p&&!q)return "";
     return `<div class="e-meta">${p?"단가 "+won(p):""}${p&&q?'<span class="sep">·</span>':""}${q?q+"주":""}`+
       `${(p&&q)?'<span class="sep">·</span>총 '+won(p*q):""}</div>`;}
+  function rowHtml(d){const need=needsReview(d);const r=d.type==="sell"?realized(d):null;
+    const q=Number(d.qty)||0,p=Number(d.price)||0;
+    const mt=p?("@"+won(p)+(q?" ×"+q:"")) : (q?q+"주":"");
+    const rz=r?`<span class="rz2 ${r.pl>=0?'pf':'ls'}">${r.pl>=0?'+':''}${won(r.pl)}</span>`:"";
+    return `<div class="jli${need?' need':''}" data-open="${d.id}">`+
+      `<span class="d">${esc(d.date)}</span><span class="n">${esc(d.name)}</span>`+
+      (mt?`<span class="mt">${mt}</span>`:"")+rz+
+      (need?'<span class="nb">복기</span>':"")+(d.applied?'<span class="ap">반영</span>':"")+
+      `<span class="arw">›</span></div>`;}
   function card(d){const need=needsReview(d);
     return `<div class="entry ${d.type}${need?' need':''}" data-id="${d.id}">`+
       `<div class="e-head"><span class="e-date">${esc(d.date)}</span>`+
@@ -272,9 +304,9 @@
     const sorted=[...data].sort((a,b)=>(b.date>a.date?1:b.date<a.date?-1:0)||(b.id>a.id?1:-1));
     const buys=sorted.filter(d=>d.type==="buy"), sells=sorted.filter(d=>d.type==="sell");
     return `<section class="panel block buy"><div class="block-head"><span class="dot"></span>매수<span class="cnt">${buys.length}</span></div>`+
-      `<div class="entries">${buys.length?buys.map(card).join(""):'<div class="empty">아직 매수 기록이 없어요</div>'}</div></section>`+
+      `<div class="entries">${buys.length?buys.map(rowHtml).join(""):'<div class="empty">아직 매수 기록이 없어요</div>'}</div></section>`+
       `<section class="panel block sell"><div class="block-head"><span class="dot"></span>매도<span class="cnt">${sells.length}</span></div>`+
-      `<div class="entries">${sells.length?sells.map(card).join(""):'<div class="empty">아직 매도 기록이 없어요</div>'}</div></section>`;}
+      `<div class="entries">${sells.length?sells.map(rowHtml).join(""):'<div class="empty">아직 매도 기록이 없어요</div>'}</div></section>`;}
 
   // ---- timeline view ----
   function renderTimeline(){
@@ -315,11 +347,26 @@
     if(!id2||!k||k==="link")return;const it=data.find(d=>d.id===id2);if(!it)return;it[k]=t.value;persist();});
   // link select change → recompute
   document.body.addEventListener("change",e=>{const t=e.target;if(!t.dataset)return;
-    if(t.dataset.k==="link"){const it=data.find(d=>d.id===t.dataset.id);if(it){it.linkId=t.value||null;persist();render();}}
+    if(t.dataset.k==="link"){const it=data.find(d=>d.id===t.dataset.id);if(it){it.linkId=t.value||null;persist();render();refreshJ();}}
     else if(t.dataset.k==="market"){const it=data.find(d=>d.id===t.dataset.id);if(it){it.market=t.value;persist();}}});
-  // delete
+  // open modal on row click
+  let openId=null;
+  const jov=id("jov");
+  function openJ(idv){const d=data.find(x=>x.id===idv);if(!d)return;openId=idv;
+    id("jmHead").innerHTML=`<span class="bd" style="background:${d.type==='buy'?'var(--buy-bg)':'var(--sell-bg)'};color:${d.type==='buy'?'var(--buy)':'var(--sell)'}">${d.type==='buy'?'매수':'매도'}</span>`+
+      `<span>${esc(d.name)}</span><span style="font:600 11px var(--mono);color:var(--ink-soft)">${esc(d.date)}</span>`+
+      `<button class="jm-x" id="jmX" aria-label="닫기">×</button>`;
+    id("jmBody").innerHTML=card(d);
+    id("jmX").addEventListener("click",closeJ);
+    jov.classList.add("on");document.body.style.overflow="hidden";}
+  function closeJ(){jov.classList.remove("on");document.body.style.overflow="";openId=null;render();}
+  function refreshJ(){if(openId){const d=data.find(x=>x.id===openId);if(d)id("jmBody").innerHTML=card(d);}}
+  jov.addEventListener("click",e=>{if(e.target===jov)closeJ();});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&jov.classList.contains("on"))closeJ();});
+  document.body.addEventListener("click",e=>{const li=e.target.closest("[data-open]");if(li){openJ(li.dataset.open);}});
+  // delete (works from modal) → close modal
   document.body.addEventListener("click",e=>{const b=e.target.closest("[data-del]");if(!b)return;
-    data=data.filter(d=>d.id!==b.dataset.del);persist();render();});
+    data=data.filter(d=>d.id!==b.dataset.del);persist();if(openId===b.dataset.del){jov.classList.remove("on");document.body.style.overflow="";openId=null;}render();});
 
   // ---- export / import / send to 손익계산기 ----
   id("expBtn").addEventListener("click",()=>{

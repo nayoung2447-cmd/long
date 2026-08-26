@@ -12,6 +12,7 @@ window.APP = {
     { id:"pieus",   name:"포트폴리오_미장", desc:"미장 비중 파이/도넛 — 매입금액·수익률→평가·비중 자동", file:"portfolio_pie_us.html", accent:"#1f6feb", glyph:"◑" },
     { id:"journal", name:"매매일지", desc:"매매 이유·복기, 실현손익, 종목별 타임라인",                    file:"trade_journal.html", accent:"#c5221f", glyph:"✎" },
     { id:"opinion", name:"투자의견", desc:"미장·국장별 목표가·긍정·부정·비고",                          file:"opinion.html",       accent:"#00838f", glyph:"◎" },
+    { id:"watch",   name:"관심종목", desc:"국장·미장 관심종목 저장 · 클릭 시 투자의견 팝업",              file:"watchlist.html",     accent:"#c2772a", glyph:"★" },
     { id:"rebal",   name:"리밸런싱", desc:"국장·미장 각각 목표 비중 대비 매수·매도 계산",             file:"rebalance.html",     accent:"#188038", glyph:"⇄" },
     { id:"pnl",     name:"양도세계산",   desc:"해외주식 손익·양도세(250만 공제·22%)·손실통산 절세",           file:"pnl_tax.html",       accent:"#8430ce", glyph:"₩" },
   ]

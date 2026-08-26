@@ -1,7 +1,7 @@
-const CACHE="toolkit-v2";
+const CACHE="toolkit-v3";
 const ASSETS=["./","./index.html","./tabs.html","./shared.css","./shared.js",
 "./portfolio_pie.html","./portfolio_pie_us.html","./rebalance.html","./pnl_tax.html",
-"./trade_journal.html","./opinion.html","./manifest.json","./icon-192.png","./icon-512.png","./icon-180.png"];
+"./trade_journal.html","./opinion.html","./watchlist.html","./manifest.json","./icon-192.png","./icon-512.png","./icon-180.png"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)))});
 self.addEventListener("activate",e=>{e.waitUntil(
   caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())
